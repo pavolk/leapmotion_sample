@@ -1,0 +1,8 @@
+[requires]
+opencv/4.3.0@conan/stable
+opengl/virtual@bincrafters/stable
+glew/2.1.0@bincrafters/stable
+freeglut/3.2.1@bincrafters/stable
+
+[generators]
+cmake
