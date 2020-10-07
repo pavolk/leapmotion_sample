@@ -1,8 +1,8 @@
 # hello Leap Motion
 
-Simple demo application using Leap-SDK's LeapC-API and opengl (freeglut, glew) to render the hand and finger positions.
+Simple demo application using Leap-SDK's LeapC-API and opengl (freeglut, glew, glm) to render the hand and finger positions.
 
-This is an adapted copy of the "GLUTSample" application from the Leap-SDK.
+This is an adapted copy of the "GLUTSample" application from the [LeapSDK](https://www2.leapmotion.com/v4.1-lmc-windows-sdk).
 
 # Building on Windows
 
@@ -25,7 +25,7 @@ scoop install cmake conan
 
 1. Install dependencies
 
-    1. 
+    1. Setting up the conan repositories and installing the dependencies 
 
     ```
     conan remote add inria https://api.bintray.com/conan/inria/conan
