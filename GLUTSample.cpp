@@ -32,6 +32,17 @@ void OnFrame(const LEAP_TRACKING_EVENT *frame){
   newestFrameId = (int32_t)frame->tracking_frame_id;
 }
 
+static glm::quat toGlm(const LEAP_QUATERNION& q)
+{
+    return glm::quat(q.w, q.x, q.y, q.z);
+}
+
+static glm::vec3 toGlm(const LEAP_VECTOR& v)
+{
+    return glm::vec3(v.x, v.y, v.z);
+}
+
+
 void display(void)
 {
   glMatrixMode(GL_MODELVIEW);
@@ -59,17 +70,23 @@ void display(void)
 
           //palm position
           glPushMatrix();
-          glTranslatef(hand->palm.position.x, hand->palm.position.y, hand->palm.position.z);
+          auto position = hand->palm.position;
+          glTranslatef(position.x, position.y, position.z);
 
-          auto po = hand->palm.orientation;
-          glm::quat q(po.w, po.x, po.y, po.z);
-          auto angle = glm::degrees(glm::angle(q));
-          auto axis = glm::axis(q);
+          auto orientation = hand->palm.orientation;
+          auto angle = glm::degrees(glm::angle(toGlm(orientation)));
+          auto axis = glm::axis(toGlm(orientation));
           glRotatef(angle, axis.x, axis.y, axis.z);
-          
+
           //glutWireOctahedron();
           glutWireCube(hand->palm.width);
           glPopMatrix();
+
+          glBegin(GL_LINES);
+          glVertex3f(position.x, position.y, position.z);
+          auto end = toGlm(position) + toGlm(hand->palm.normal) * hand->palm.width;
+          glVertex3f(end.x, end.y, end.z);
+          glEnd();
 
           //Distal ends of bones for each digit
           for (int f = 0; f < 5; f++) {
@@ -77,8 +94,21 @@ void display(void)
               for (int b = 0; b < 4; b++) {
                   LEAP_BONE bone = finger.bones[b];
                   glPushMatrix();
-                  glTranslatef(bone.next_joint.x, bone.next_joint.y, bone.next_joint.z);
-                  glutWireOctahedron();
+                  
+                  auto begin = toGlm(bone.prev_joint);
+                  auto end = toGlm(bone.next_joint);
+
+                  glTranslatef(begin.x, begin.y, begin.z);
+                  auto orientation = bone.rotation;
+                  auto angle = glm::degrees(glm::angle(toGlm(orientation)));
+                  auto axis = glm::axis(toGlm(orientation));
+                  glRotatef(angle, axis.x, axis.y, axis.z);
+
+                  glutSolidCylinder(bone.width/2.0, glm::distance(begin, end), 10, 10);
+
+                  //glTranslatef(bone.next_joint.x, bone.next_joint.y, bone.next_joint.z);
+                  //glutWireOctahedron();
+                  
                   glPopMatrix();
               }
           }
