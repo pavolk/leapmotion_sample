@@ -4,5 +4,8 @@ opengl/virtual@bincrafters/stable
 glew/2.1.0@bincrafters/stable
 freeglut/3.2.1@bincrafters/stable
 
+glm/0.9.9.5@g-truc/stable
+
+
 [generators]
 cmake
