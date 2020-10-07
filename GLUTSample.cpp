@@ -6,8 +6,6 @@
 * between Ultraleap and you, your company or other organization.               *
 \******************************************************************************/
 
-#undef __cplusplus
-
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -21,6 +19,9 @@
 #include "LeapC.h"
 #include "ExampleConnection.h"
 #include "GLutils.h"
+
+#include <glm/ext/quaternion_float.hpp>
+#include <glm/ext/quaternion_trigonometric.hpp>
 
 int32_t lastDrawnFrameId = 0;
 volatile int32_t newestFrameId = 0;
@@ -39,39 +40,51 @@ void display(void)
   glClear(GL_COLOR_BUFFER_BIT);
 
   LEAP_TRACKING_EVENT *frame = GetFrame();
-  for(uint32_t h = 0; h < frame->nHands; h++){
-    // Draw the hand
-    LEAP_HAND *hand = &frame->pHands[h];
-    //elbow
-    glPushMatrix();
-    glTranslatef(hand->arm.prev_joint.x, hand->arm.prev_joint.y, hand->arm.prev_joint.z);
-    glutWireOctahedron();
-    glPopMatrix();
+  if (frame) {
 
-    //wrist
-    glPushMatrix();
-    glTranslatef(hand->arm.next_joint.x, hand->arm.next_joint.y, hand->arm.next_joint.z);
-    glutWireOctahedron();
-    glPopMatrix();
+      for (uint32_t h = 0; h < frame->nHands; h++) {
+          // Draw the hand
+          LEAP_HAND* hand = &frame->pHands[h];
+          //elbow
+          glPushMatrix();
+          glTranslatef(hand->arm.prev_joint.x, hand->arm.prev_joint.y, hand->arm.prev_joint.z);
+          glutWireOctahedron();
+          glPopMatrix();
 
-    //palm position
-    glPushMatrix();
-    glTranslatef(hand->palm.position.x, hand->palm.position.y, hand->palm.position.z);
-    glutWireOctahedron();
-    glPopMatrix();
+          //wrist
+          glPushMatrix();
+          glTranslatef(hand->arm.next_joint.x, hand->arm.next_joint.y, hand->arm.next_joint.z);
+          glutWireOctahedron();
+          glPopMatrix();
 
-    //Distal ends of bones for each digit
-    for(int f = 0; f < 5; f++){
-      LEAP_DIGIT finger = hand->digits[f];
-      for(int b = 0; b < 4; b++){
-        LEAP_BONE bone = finger.bones[b];
-        glPushMatrix();
-        glTranslatef(bone.next_joint.x, bone.next_joint.y, bone.next_joint.z);
-        glutWireOctahedron();
-        glPopMatrix();
+          //palm position
+          glPushMatrix();
+          glTranslatef(hand->palm.position.x, hand->palm.position.y, hand->palm.position.z);
+
+          auto po = hand->palm.orientation;
+          glm::quat q(po.w, po.x, po.y, po.z);
+          auto angle = glm::degrees(glm::angle(q));
+          auto axis = glm::axis(q);
+          glRotatef(angle, axis.x, axis.y, axis.z);
+          
+          //glutWireOctahedron();
+          glutWireCube(hand->palm.width);
+          glPopMatrix();
+
+          //Distal ends of bones for each digit
+          for (int f = 0; f < 5; f++) {
+              LEAP_DIGIT finger = hand->digits[f];
+              for (int b = 0; b < 4; b++) {
+                  LEAP_BONE bone = finger.bones[b];
+                  glPushMatrix();
+                  glTranslatef(bone.next_joint.x, bone.next_joint.y, bone.next_joint.z);
+                  glutWireOctahedron();
+                  glPopMatrix();
+              }
+          }
+          // End of draw hand
       }
-    }
-    // End of draw hand
+
   }
   glFlush();
   glPopMatrix();
@@ -116,7 +129,7 @@ int main(int argc, char *argv[])
 
   glutInit(&argc, argv);
   glutInitDisplayMode(GLUT_SINGLE | GLUT_RGBA);
-  glutInitWindowSize(640, 240);
+  glutInitWindowSize(1280, 720);
   window = glutCreateWindow("LeapC Example");
 
   // GLUT callbacks
