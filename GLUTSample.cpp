@@ -16,9 +16,13 @@
 #endif
 
 #include <time.h>
-#include "LeapC.h"
+#include <LeapC.h>
 #include "ExampleConnection.h"
-#include "GLutils.h"
+
+// #define GLEW_STATIC
+#include <GL/glew.h>
+#include <GL/gl.h>
+#include <GL/freeglut.h>
 
 #include <glm/ext/quaternion_float.hpp>
 #include <glm/ext/quaternion_trigonometric.hpp>
@@ -42,6 +46,22 @@ static glm::vec3 toGlm(const LEAP_VECTOR& v)
     return glm::vec3(v.x, v.y, v.z);
 }
 
+static void glRotatef(const LEAP_QUATERNION& q)
+{
+  auto angle = glm::degrees(glm::angle(toGlm(q)));
+  auto axis = glm::axis(toGlm(q));
+  glRotatef(angle, axis.x, axis.y, axis.z);
+}
+
+static void glTranslatef(const LEAP_VECTOR& v)
+{
+  glTranslatef(v.x, v.y, v.z);
+}
+
+static float distance(const LEAP_VECTOR& p1, const LEAP_VECTOR& p2)
+{
+  return glm::distance(toGlm(p1), toGlm(p2));
+}
 
 void display(void)
 {
@@ -69,22 +89,20 @@ void display(void)
           glPopMatrix();
 
           //palm position
-          glPushMatrix();
           auto position = hand->palm.position;
-          glTranslatef(position.x, position.y, position.z);
-
           auto orientation = hand->palm.orientation;
-          auto angle = glm::degrees(glm::angle(toGlm(orientation)));
-          auto axis = glm::axis(toGlm(orientation));
-          glRotatef(angle, axis.x, axis.y, axis.z);
+          auto normal = hand->palm.normal;
+          auto width = hand->palm.width;
 
-          //glutWireOctahedron();
-          glutWireCube(hand->palm.width);
+          glPushMatrix();
+          glTranslatef(position);
+          glRotatef(orientation);
+          glutWireCube(width);
           glPopMatrix();
 
           glBegin(GL_LINES);
           glVertex3f(position.x, position.y, position.z);
-          auto end = toGlm(position) + toGlm(hand->palm.normal) * hand->palm.width;
+          auto end = toGlm(position) + toGlm(normal) * width;
           glVertex3f(end.x, end.y, end.z);
           glEnd();
 
@@ -94,17 +112,11 @@ void display(void)
               for (int b = 0; b < 4; b++) {
                   LEAP_BONE bone = finger.bones[b];
                   glPushMatrix();
-                  
+                  glTranslatef(bone.prev_joint);
+                  glRotatef(bone.rotation);
                   auto begin = toGlm(bone.prev_joint);
                   auto end = toGlm(bone.next_joint);
-
-                  glTranslatef(begin.x, begin.y, begin.z);
-                  auto orientation = bone.rotation;
-                  auto angle = glm::degrees(glm::angle(toGlm(orientation)));
-                  auto axis = glm::axis(toGlm(orientation));
-                  glRotatef(angle, axis.x, axis.y, axis.z);
-
-                  glutSolidCylinder(bone.width/2.0, glm::distance(begin, end), 10, 10);
+                  glutSolidCylinder(bone.width/2.0, distance(begin, end), 10, 10);
 
                   //glTranslatef(bone.next_joint.x, bone.next_joint.y, bone.next_joint.z);
                   //glutWireOctahedron();
